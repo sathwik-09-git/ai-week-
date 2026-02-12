@@ -46,6 +46,19 @@ function getParamDefs(type: string): ParamDef[] {
         { key: "amplitude", label: "Amplitude", min: 0.1, max: 5, step: 0.1, unit: "m" },
         { key: "frequency", label: "Frequency", min: 0.1, max: 10, step: 0.1, unit: "Hz" },
       ];
+    case "inclined_plane":
+      return [
+        { key: "inclineAngle", label: "Incline Angle", min: 5, max: 85, step: 1, unit: "°" },
+        { key: "initialVelocity", label: "Initial Speed", min: 0, max: 30, step: 0.5, unit: "m/s" },
+        { key: "initialHeight", label: "Incline Height", min: 1, max: 100, step: 1, unit: "m" },
+        { key: "frictionCoefficient", label: "Friction (μ)", min: 0, max: 1, step: 0.01, unit: "" },
+        ...base,
+      ];
+    case "rotational_motion":
+      return [
+        { key: "radius", label: "Radius", min: 0.5, max: 10, step: 0.1, unit: "m" },
+        { key: "angularVelocity", label: "Angular Velocity", min: 0.5, max: 20, step: 0.5, unit: "rad/s" },
+      ];
     default:
       return base;
   }
@@ -69,7 +82,7 @@ export default function ParameterControls({ params, onChange }: Props) {
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-medium">{d.label}</Label>
                 <span className="text-xs font-mono text-primary font-semibold">
-                  {val.toFixed(d.step < 1 ? 1 : 0)} {d.unit}
+                  {val.toFixed(d.step < 1 ? (d.step < 0.1 ? 2 : 1) : 0)} {d.unit}
                 </span>
               </div>
               <Slider

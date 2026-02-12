@@ -14,7 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      search_history: {
+        Row: {
+          created_at: string
+          id: string
+          parsed_params: Json | null
+          parsed_type: string | null
+          problem_text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parsed_params?: Json | null
+          parsed_type?: string | null
+          problem_text: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parsed_params?: Json | null
+          parsed_type?: string | null
+          problem_text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -20,39 +20,49 @@ export default function SimulationCanvas({ params, isPlaying, timeRef, onFrame, 
   const lastTs = useRef<number>(0);
 
   const getScale = useCallback((trajectory: SimulationFrame[]) => {
-    let maxX = 1, maxY = 1;
+    let maxX = 1, minX = 0, maxY = 1;
     for (const f of trajectory) {
-      if (Math.abs(f.x) > maxX) maxX = Math.abs(f.x);
-      if (f.y > maxY) maxY = f.y;
+      if (f.x > maxX) maxX = f.x;
+      if (f.x < minX) minX = f.x;
+      if (Math.abs(f.y) > maxY) maxY = Math.abs(f.y);
     }
     const plotW = CANVAS_W - PADDING * 2;
     const plotH = CANVAS_H - PADDING * 2;
-    const scaleX = params.type === "simple_harmonic_motion" || params.type === "horizontal_projectile"
-      ? plotW / (maxX * 2.2 || 1)
-      : 1;
-    const scaleY = plotH / (maxY * 1.2 || 1);
-    return { scaleX, scaleY, maxX, maxY };
-  }, [params.type]);
+    const rangeX = Math.max(maxX - minX, 1);
+    const scaleX = plotW / (rangeX * 1.15);
+    const scaleY = plotH / (maxY * 1.15 || 1);
+    return { scaleX, scaleY, maxX, maxY, minX };
+  }, []);
 
   const draw = useCallback((ctx: CanvasRenderingContext2D, t: number) => {
     const dpr = window.devicePixelRatio || 1;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+
+    // Use CSS custom properties for theming
+    const isDark = document.documentElement.classList.contains("dark");
+    const bgColor = isDark ? "hsl(220, 20%, 10%)" : "hsl(0, 0%, 100%)";
+    const gridColor = isDark ? "hsl(220, 15%, 25%)" : "hsl(220, 15%, 88%)";
+    const axisColor = isDark ? "hsl(220, 10%, 55%)" : "hsl(220, 10%, 50%)";
+    const labelColor = isDark ? "hsl(220, 10%, 65%)" : "hsl(220, 10%, 45%)";
+    const textColor = isDark ? "hsl(220, 25%, 85%)" : "hsl(220, 25%, 10%)";
+
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
     const trajectory = generateTrajectory(params);
     const compareTraj = compareParams ? generateTrajectory(compareParams) : null;
     const allFrames = [...trajectory, ...(compareTraj || [])];
-    const { scaleX, scaleY } = getScale(allFrames);
+    const { scaleX, scaleY, minX } = getScale(allFrames);
 
-    const originX = params.type === "simple_harmonic_motion" 
-      ? CANVAS_W / 2 
-      : params.type === "horizontal_projectile" 
-        ? PADDING 
-        : CANVAS_W / 2;
-    const originY = CANVAS_H - PADDING;
+    const isCircular = params.type === "rotational_motion";
+    const isSHM = params.type === "simple_harmonic_motion";
+    const needsCenteredX = isSHM || isCircular;
+
+    const originX = needsCenteredX ? CANVAS_W / 2 : PADDING - minX * scaleX;
+    const originY = isCircular ? CANVAS_H / 2 : CANVAS_H - PADDING;
 
     // Grid
-    ctx.strokeStyle = "hsl(220, 15%, 80%)";
+    ctx.strokeStyle = gridColor;
     ctx.lineWidth = 0.5;
     for (let i = 0; i <= 5; i++) {
       const gy = originY - (i / 5) * (CANVAS_H - PADDING * 2);
@@ -60,20 +70,23 @@ export default function SimulationCanvas({ params, isPlaying, timeRef, onFrame, 
     }
 
     // Axes
-    ctx.strokeStyle = "hsl(220, 10%, 50%)";
+    ctx.strokeStyle = axisColor;
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(PADDING, originY); ctx.lineTo(CANVAS_W - PADDING, originY); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(originX, PADDING); ctx.lineTo(originX, originY); ctx.stroke();
+    const axisStartX = needsCenteredX ? CANVAS_W / 2 : Math.max(originX, PADDING);
+    ctx.beginPath(); ctx.moveTo(axisStartX, PADDING); ctx.lineTo(axisStartX, CANVAS_H - PADDING); ctx.stroke();
 
     // Labels
-    ctx.fillStyle = "hsl(220, 10%, 45%)";
-    ctx.font = "11px 'JetBrains Mono'";
+    ctx.fillStyle = labelColor;
+    ctx.font = "11px 'JetBrains Mono', monospace";
     ctx.textAlign = "center";
-    ctx.fillText(params.type === "simple_harmonic_motion" ? "x (m)" : "Distance (m)", CANVAS_W / 2, CANVAS_H - 10);
+    const xLabel = isSHM ? "x (m)" : isCircular ? "x (m)" : "Distance (m)";
+    const yLabel = isCircular ? "y (m)" : "Height (m)";
+    ctx.fillText(xLabel, CANVAS_W / 2, CANVAS_H - 10);
     ctx.save();
     ctx.translate(15, CANVAS_H / 2);
     ctx.rotate(-Math.PI / 2);
-    ctx.fillText("Height (m)", 0, 0);
+    ctx.fillText(yLabel, 0, 0);
     ctx.restore();
 
     // Draw trajectory path
@@ -109,7 +122,7 @@ export default function SimulationCanvas({ params, isPlaying, timeRef, onFrame, 
     // Dot
     ctx.fillStyle = "hsl(250, 80%, 60%)";
     ctx.beginPath(); ctx.arc(px, py, 7, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = "hsl(0, 0%, 100%)";
+    ctx.strokeStyle = isDark ? "hsl(0, 0%, 90%)" : "hsl(0, 0%, 100%)";
     ctx.lineWidth = 2;
     ctx.stroke();
 
@@ -120,20 +133,20 @@ export default function SimulationCanvas({ params, isPlaying, timeRef, onFrame, 
       const cpy = originY - cf.y * scaleY;
       ctx.fillStyle = "hsl(170, 70%, 45%)";
       ctx.beginPath(); ctx.arc(cpx, cpy, 6, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = "hsl(0, 0%, 100%)";
+      ctx.strokeStyle = isDark ? "hsl(0, 0%, 90%)" : "hsl(0, 0%, 100%)";
       ctx.lineWidth = 2;
       ctx.stroke();
     }
 
     // Label
-    ctx.fillStyle = "hsl(220, 25%, 10%)";
-    ctx.font = "bold 12px Inter";
+    ctx.fillStyle = textColor;
+    ctx.font = "bold 12px Inter, sans-serif";
     ctx.textAlign = "left";
     ctx.fillText(params.label, px + 12, py - 8);
 
     // Time
     ctx.fillStyle = "hsl(250, 80%, 60%)";
-    ctx.font = "bold 13px 'JetBrains Mono'";
+    ctx.font = "bold 13px 'JetBrains Mono', monospace";
     ctx.textAlign = "right";
     ctx.fillText(`t = ${t.toFixed(2)}s`, CANVAS_W - PADDING, PADDING - 10);
 
@@ -159,7 +172,12 @@ export default function SimulationCanvas({ params, isPlaying, timeRef, onFrame, 
 
       if (isPlaying) {
         timeRef.current += delta;
-        if (timeRef.current > maxTime) timeRef.current = maxTime;
+        if (params.type === "rotational_motion") {
+          // Loop rotational motion
+          if (timeRef.current > maxTime) timeRef.current = timeRef.current % maxTime;
+        } else if (timeRef.current > maxTime) {
+          timeRef.current = maxTime;
+        }
       }
       draw(ctx, timeRef.current);
       animRef.current = requestAnimationFrame(animate);

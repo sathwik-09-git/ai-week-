@@ -7,6 +7,7 @@ import ParameterControls from "@/components/ParameterControls";
 import GraphsPanel from "@/components/GraphsPanel";
 import ProblemInput from "@/components/ProblemInput";
 import ParsedDisplay from "@/components/ParsedDisplay";
+import SearchHistory from "@/components/SearchHistory";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -17,16 +18,20 @@ import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) navigate("/auth", { replace: true });
+      else setUserId(session.user.id);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) navigate("/auth", { replace: true });
+      else setUserId(session.user.id);
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
+
   const [params, setParams] = useState<PhysicsParams>(DEFAULT_PARAMS);
   const [parsed, setParsed] = useState<ParsedProblem | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -34,6 +39,7 @@ const Index = () => {
   const [history, setHistory] = useState<SimulationFrame[]>([]);
   const [whatIf, setWhatIf] = useState(false);
   const [originalParams, setOriginalParams] = useState<PhysicsParams | null>(null);
+  const [historyRefresh, setHistoryRefresh] = useState(0);
   const timeRef = useRef(0);
 
   const onFrame = useCallback((frame: SimulationFrame) => {
@@ -59,6 +65,17 @@ const Index = () => {
       setParsed({ type: p.type, parameters: newParams, description: text });
       resetSim();
       setIsPlaying(true);
+
+      // Save to search history
+      if (userId) {
+        await supabase.from("search_history").insert({
+          user_id: userId,
+          problem_text: text,
+          parsed_type: p.type,
+          parsed_params: p as any,
+        });
+        setHistoryRefresh((n) => n + 1);
+      }
     } catch (e: any) {
       toast({ title: "Parsing failed", description: e.message, variant: "destructive" });
     } finally {
@@ -78,7 +95,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="container max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
           <Atom className="h-6 w-6 text-primary" />
@@ -101,7 +117,6 @@ const Index = () => {
             <ParsedDisplay parsed={parsed} />
             <ParameterControls params={params} onChange={handleParamChange} />
 
-            {/* What-If Toggle */}
             {originalParams && (
               <div className="flex items-center gap-2 p-3 rounded-lg border border-border bg-card">
                 <Switch checked={whatIf} onCheckedChange={setWhatIf} id="whatif" />
@@ -110,11 +125,12 @@ const Index = () => {
                 </Label>
               </div>
             )}
+
+            <SearchHistory onSelect={handleParse} refreshKey={historyRefresh} />
           </div>
 
           {/* Right Panel */}
           <div className="lg:col-span-8 space-y-4">
-            {/* Simulation controls */}
             <div className="flex items-center gap-2">
               <Button size="sm" variant="outline" onClick={() => setIsPlaying(!isPlaying)}>
                 {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
@@ -127,7 +143,6 @@ const Index = () => {
               </span>
             </div>
 
-            {/* Canvas */}
             <div className="flex justify-center">
               <SimulationCanvas
                 params={params}
@@ -138,7 +153,6 @@ const Index = () => {
               />
             </div>
 
-            {/* Graphs */}
             <GraphsPanel history={history} motionType={params.type} />
           </div>
         </div>

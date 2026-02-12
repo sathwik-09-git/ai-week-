@@ -2,7 +2,9 @@ export type PhysicsType =
   | "vertical_projectile" 
   | "horizontal_projectile" 
   | "free_fall" 
-  | "simple_harmonic_motion";
+  | "simple_harmonic_motion"
+  | "inclined_plane"
+  | "rotational_motion";
 
 export interface PhysicsParams {
   type: PhysicsType;
@@ -15,6 +17,12 @@ export interface PhysicsParams {
   // SHM specific
   amplitude?: number;
   frequency?: number;
+  // Inclined plane specific
+  inclineAngle?: number; // degrees
+  frictionCoefficient?: number;
+  // Rotational motion specific
+  radius?: number;
+  angularVelocity?: number; // rad/s
 }
 
 export interface SimulationState {
@@ -66,5 +74,13 @@ export const SAMPLE_PROBLEMS = [
   {
     label: "SHM",
     text: "A mass on a spring oscillates with an amplitude of 0.5 meters and a frequency of 2 Hz.",
+  },
+  {
+    label: "Inclined Plane",
+    text: "A 2 kg block slides down a 30 degree frictionless inclined plane from rest.",
+  },
+  {
+    label: "Rotational",
+    text: "A ball moves in a circle of radius 2 meters with angular velocity 3 rad/s.",
   },
 ];
