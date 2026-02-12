@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { PhysicsParams, ParsedProblem, SimulationFrame, DEFAULT_PARAMS } from "@/lib/physics/types";
 import { generateTrajectory } from "@/lib/physics/engine";
 import SimulationCanvas from "@/components/SimulationCanvas";
@@ -6,14 +7,26 @@ import ParameterControls from "@/components/ParameterControls";
 import GraphsPanel from "@/components/GraphsPanel";
 import ProblemInput from "@/components/ProblemInput";
 import ParsedDisplay from "@/components/ParsedDisplay";
+import ThemeToggle from "@/components/ThemeToggle";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, Atom } from "lucide-react";
+import { Play, Pause, RotateCcw, Atom, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
 const Index = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) navigate("/auth", { replace: true });
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) navigate("/auth", { replace: true });
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
   const [params, setParams] = useState<PhysicsParams>(DEFAULT_PARAMS);
   const [parsed, setParsed] = useState<ParsedProblem | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -71,6 +84,12 @@ const Index = () => {
           <Atom className="h-6 w-6 text-primary" />
           <h1 className="text-lg font-bold tracking-tight">STEM AI Visualizer</h1>
           <span className="text-xs text-muted-foreground hidden sm:inline">Physics Problem Simulator</span>
+          <div className="ml-auto flex items-center gap-1">
+            <ThemeToggle />
+            <Button variant="ghost" size="icon" onClick={() => supabase.auth.signOut()} aria-label="Sign out">
+              <LogOut className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -120,7 +139,7 @@ const Index = () => {
             </div>
 
             {/* Graphs */}
-            <GraphsPanel history={history} />
+            <GraphsPanel history={history} motionType={params.type} />
           </div>
         </div>
       </main>

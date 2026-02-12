@@ -66,7 +66,7 @@ export function getMaxTime(params: PhysicsParams): number {
       return Math.max(tLand, 1) + 0.5;
     }
     case "simple_harmonic_motion":
-      return 3 / (params.frequency ?? 2);
+      return (params.frequency ?? 2) > 0 ? 3 / (params.frequency ?? 2) : 5;
     default:
       return 5;
   }

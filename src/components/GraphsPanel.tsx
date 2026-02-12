@@ -8,22 +8,29 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid } from "recharts";
 
 interface Props {
   history: SimulationFrame[];
+  motionType?: string;
 }
 
 const chartConfig = {
   y: { label: "Height", color: "hsl(var(--chart-1))" },
   vy: { label: "Velocity Y", color: "hsl(var(--chart-2))" },
+  vx: { label: "Velocity X", color: "hsl(var(--chart-3))" },
   x: { label: "Position X", color: "hsl(var(--chart-3))" },
+  speed: { label: "Speed", color: "hsl(var(--chart-4))" },
 };
 
-export default function GraphsPanel({ history }: Props) {
-  // downsample for perf
+export default function GraphsPanel({ history, motionType }: Props) {
   const data = history.filter((_, i) => i % 3 === 0).map((f) => ({
     t: +f.time.toFixed(2),
     y: +f.y.toFixed(3),
     vy: +f.vy.toFixed(3),
     x: +f.x.toFixed(3),
+    vx: +f.vx.toFixed(3),
+    speed: +Math.sqrt(f.vx * f.vx + f.vy * f.vy).toFixed(3),
   }));
+
+  const isSHM = motionType === "simple_harmonic_motion";
+  const isHorizontal = motionType === "horizontal_projectile";
 
   return (
     <div className="grid grid-cols-1 gap-4">
@@ -35,8 +42,16 @@ export default function GraphsPanel({ history }: Props) {
             <XAxis dataKey="t" tick={{ fontSize: 10 }} label={{ value: "t (s)", position: "bottom", fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Line type="monotone" dataKey="y" stroke="hsl(var(--chart-1))" dot={false} strokeWidth={2} name="Height (m)" />
-            <Line type="monotone" dataKey="x" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="X (m)" />
+            {isSHM ? (
+              <Line type="monotone" dataKey="x" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="X (m)" />
+            ) : (
+              <>
+                <Line type="monotone" dataKey="y" stroke="hsl(var(--chart-1))" dot={false} strokeWidth={2} name="Height (m)" />
+                {isHorizontal && (
+                  <Line type="monotone" dataKey="x" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="X (m)" />
+                )}
+              </>
+            )}
           </LineChart>
         </ChartContainer>
       </div>
@@ -49,7 +64,17 @@ export default function GraphsPanel({ history }: Props) {
             <XAxis dataKey="t" tick={{ fontSize: 10 }} label={{ value: "t (s)", position: "bottom", fontSize: 10 }} />
             <YAxis tick={{ fontSize: 10 }} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Line type="monotone" dataKey="vy" stroke="hsl(var(--chart-2))" dot={false} strokeWidth={2} name="Vy (m/s)" />
+            {isSHM ? (
+              <Line type="monotone" dataKey="vx" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="Vx (m/s)" />
+            ) : isHorizontal ? (
+              <>
+                <Line type="monotone" dataKey="vy" stroke="hsl(var(--chart-2))" dot={false} strokeWidth={2} name="Vy (m/s)" />
+                <Line type="monotone" dataKey="vx" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="Vx (m/s)" />
+                <Line type="monotone" dataKey="speed" stroke="hsl(var(--chart-4))" dot={false} strokeWidth={2} name="Speed (m/s)" />
+              </>
+            ) : (
+              <Line type="monotone" dataKey="vy" stroke="hsl(var(--chart-2))" dot={false} strokeWidth={2} name="Vy (m/s)" />
+            )}
           </LineChart>
         </ChartContainer>
       </div>
