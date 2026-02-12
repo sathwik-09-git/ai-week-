@@ -31,6 +31,8 @@ export default function GraphsPanel({ history, motionType }: Props) {
 
   const isSHM = motionType === "simple_harmonic_motion";
   const isHorizontal = motionType === "horizontal_projectile";
+  const isRotational = motionType === "rotational_motion";
+  const isInclined = motionType === "inclined_plane";
 
   return (
     <div className="grid grid-cols-1 gap-4">
@@ -44,10 +46,15 @@ export default function GraphsPanel({ history, motionType }: Props) {
             <ChartTooltip content={<ChartTooltipContent />} />
             {isSHM ? (
               <Line type="monotone" dataKey="x" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="X (m)" />
+            ) : isRotational ? (
+              <>
+                <Line type="monotone" dataKey="x" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="X (m)" />
+                <Line type="monotone" dataKey="y" stroke="hsl(var(--chart-1))" dot={false} strokeWidth={2} name="Y (m)" />
+              </>
             ) : (
               <>
                 <Line type="monotone" dataKey="y" stroke="hsl(var(--chart-1))" dot={false} strokeWidth={2} name="Height (m)" />
-                {isHorizontal && (
+                {(isHorizontal || isInclined) && (
                   <Line type="monotone" dataKey="x" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="X (m)" />
                 )}
               </>
@@ -66,7 +73,12 @@ export default function GraphsPanel({ history, motionType }: Props) {
             <ChartTooltip content={<ChartTooltipContent />} />
             {isSHM ? (
               <Line type="monotone" dataKey="vx" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="Vx (m/s)" />
-            ) : isHorizontal ? (
+            ) : isRotational ? (
+              <>
+                <Line type="monotone" dataKey="vx" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="Vx (m/s)" />
+                <Line type="monotone" dataKey="vy" stroke="hsl(var(--chart-2))" dot={false} strokeWidth={2} name="Vy (m/s)" />
+              </>
+            ) : (isHorizontal || isInclined) ? (
               <>
                 <Line type="monotone" dataKey="vy" stroke="hsl(var(--chart-2))" dot={false} strokeWidth={2} name="Vy (m/s)" />
                 <Line type="monotone" dataKey="vx" stroke="hsl(var(--chart-3))" dot={false} strokeWidth={2} name="Vx (m/s)" />

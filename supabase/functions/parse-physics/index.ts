@@ -25,7 +25,16 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a physics problem parser. Extract structured parameters from physics word problems. Use the parse_physics tool to return your answer.`,
+            content: `You are a physics problem parser. Extract structured parameters from physics word problems. Identify the type:
+- "vertical_projectile": object thrown straight up/down with initial velocity
+- "horizontal_projectile": object launched at an angle (projectile motion with both x and y components)
+- "free_fall": object dropped from height with no initial velocity
+- "simple_harmonic_motion": oscillating systems (springs, pendulums)
+- "inclined_plane": object sliding on an inclined surface
+- "rotational_motion": circular/rotational motion
+
+For projectile motion at an angle, ALWAYS use "horizontal_projectile" type with the correct angle.
+Use the parse_physics tool to return your answer.`,
           },
           { role: "user", content: problem },
         ],
@@ -40,17 +49,21 @@ serve(async (req) => {
                 properties: {
                   type: {
                     type: "string",
-                    enum: ["vertical_projectile", "horizontal_projectile", "free_fall", "simple_harmonic_motion"],
+                    enum: ["vertical_projectile", "horizontal_projectile", "free_fall", "simple_harmonic_motion", "inclined_plane", "rotational_motion"],
                     description: "The type of physics scenario",
                   },
                   initialVelocity: { type: "number", description: "Initial velocity in m/s (0 if not given)" },
-                  angle: { type: "number", description: "Launch angle in degrees (90 for vertical, 0 for horizontal)" },
+                  angle: { type: "number", description: "Launch angle in degrees (90 for vertical, 0 for horizontal drop)" },
                   gravity: { type: "number", description: "Gravitational acceleration, default 9.8" },
                   initialHeight: { type: "number", description: "Starting height in meters, default 0" },
                   mass: { type: "number", description: "Mass in kg, default 1" },
-                  label: { type: "string", description: "Short label for the entity e.g. Ball, Stone" },
+                  label: { type: "string", description: "Short label for the entity e.g. Ball, Stone, Block" },
                   amplitude: { type: "number", description: "Amplitude for SHM in meters" },
                   frequency: { type: "number", description: "Frequency for SHM in Hz" },
+                  inclineAngle: { type: "number", description: "Angle of inclined plane in degrees" },
+                  frictionCoefficient: { type: "number", description: "Coefficient of friction (0 for frictionless)" },
+                  radius: { type: "number", description: "Radius for rotational motion in meters" },
+                  angularVelocity: { type: "number", description: "Angular velocity in rad/s" },
                 },
                 required: ["type", "initialVelocity", "angle", "gravity", "initialHeight", "mass", "label"],
                 additionalProperties: false,
