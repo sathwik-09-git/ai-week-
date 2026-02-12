@@ -4,13 +4,12 @@
 
 ### AI-Powered Physics Problem Simulator
 
-https://lovable.dev/projects/25a32196-3d85-4e64-99be-6e5a4ee7d032
 
  1. Project Title
 
 **STEM AI Visualizer – AI-Powered Physics Problem Simulator**
 
----
+https://lovable.dev/projects/25a32196-3d85-4e64-99be-6e5a4ee7d032
 
 2. Description
 
